@@ -1,0 +1,15 @@
+name: omnipulse_dart
+description: OmniPulse SDK for pure Dart applications. Provides logging and error tracking.
+version: 1.0.0
+homepage: https://github.com/masbenx/omnipulse-dart
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+
+dependencies:
+  http: ^1.1.0
+  uuid: ^4.2.1
+
+dev_dependencies:
+  lints: ^3.0.0
+  test: ^1.24.0
