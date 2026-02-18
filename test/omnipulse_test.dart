@@ -123,8 +123,8 @@ void main() {
 
       final json = entry.toJson();
 
-      expect(json.containsKey('service_name'), isFalse);
-      expect(json.containsKey('tags'), isFalse);
+      expect(json.containsKey('service'), isFalse);
+      expect(json.containsKey('meta'), isFalse);
       expect(json.containsKey('trace_id'), isFalse);
       expect(json.containsKey('span_id'), isFalse);
     });
@@ -142,8 +142,8 @@ void main() {
 
       final json = entry.toJson();
 
-      expect(json['service_name'], equals('api'));
-      expect(json['tags']['code'], equals(500));
+      expect(json['service'], equals('api'));
+      expect(json['meta']['code'], equals(500));
       expect(json['trace_id'], equals('tr1'));
       expect(json['span_id'], equals('sp1'));
     });
