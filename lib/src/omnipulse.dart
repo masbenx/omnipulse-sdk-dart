@@ -19,6 +19,7 @@ class OmniPulse {
   late final OmniPulseLogger logger;
   
   final List<LogEntry> _logBuffer = [];
+  final List<RequestEntry> _requestBuffer = [];
   
   Timer? _flushTimer;
   bool _isInitialized = false;
@@ -73,13 +74,29 @@ class OmniPulse {
     }
   }
 
+  /// Add a request entry to the buffer
+  void logRequest(RequestEntry entry) {
+    _requestBuffer.add(entry);
+    if (_requestBuffer.length >= config.batchSize) {
+      flush();
+    }
+  }
+
   /// Flush all buffered data immediately
   Future<void> flush() async {
     final logs = List<LogEntry>.from(_logBuffer);
+    final requests = List<RequestEntry>.from(_requestBuffer);
     _logBuffer.clear();
+    _requestBuffer.clear();
 
     if (logs.isNotEmpty) {
       await _sendLogs(logs);
+    }
+    
+    if (requests.isNotEmpty) {
+      for (final req in requests) {
+        await _sendRequest(req);
+      }
     }
   }
 
@@ -92,6 +109,16 @@ class OmniPulse {
     } catch (e) {
       if (config.debug) {
         print('[OmniPulse] Failed to send logs: $e');
+      }
+    }
+  }
+
+  Future<void> _sendRequest(RequestEntry req) async {
+    try {
+      await _send('/api/ingest/app-request', req.toJson());
+    } catch (e) {
+      if (config.debug) {
+        print('[OmniPulse] Failed to send request: $e');
       }
     }
   }
