@@ -20,6 +20,9 @@ class OmniPulse {
   
   final List<LogEntry> _logBuffer = [];
   final List<RequestEntry> _requestBuffer = [];
+  final List<ErrorEntry> _errorBuffer = [];
+  final List<JobEntry> _jobBuffer = [];
+  final List<AppMetricEntry> _metricBuffer = [];
   
   Timer? _flushTimer;
   bool _isInitialized = false;
@@ -77,21 +80,42 @@ class OmniPulse {
   /// Add a request entry to the buffer
   void logRequest(RequestEntry entry) {
     _requestBuffer.add(entry);
-    if (_requestBuffer.length >= config.batchSize) {
-      flush();
-    }
+    if (_requestBuffer.length >= config.batchSize) flush();
+  }
+
+  void captureError(ErrorEntry entry) {
+    _errorBuffer.add(entry);
+    if (_errorBuffer.length >= config.batchSize) flush();
+  }
+
+  void captureJob(JobEntry entry) {
+    _jobBuffer.add(entry);
+    if (_jobBuffer.length >= config.batchSize) flush();
+  }
+
+  void captureMetric(AppMetricEntry entry) {
+    _metricBuffer.add(entry);
+    if (_metricBuffer.length >= config.batchSize) flush();
   }
 
   /// Flush all buffered data immediately
   Future<void> flush() async {
     final logs = List<LogEntry>.from(_logBuffer);
     final requests = List<RequestEntry>.from(_requestBuffer);
+    final errors = List<ErrorEntry>.from(_errorBuffer);
+    final jobs = List<JobEntry>.from(_jobBuffer);
+    final metrics = List<AppMetricEntry>.from(_metricBuffer);
+
     _logBuffer.clear();
     _requestBuffer.clear();
+    _errorBuffer.clear();
+    _jobBuffer.clear();
+    _metricBuffer.clear();
 
-    if (logs.isNotEmpty) {
-      await _sendLogs(logs);
-    }
+    if (logs.isNotEmpty) await _sendLogs(logs);
+    if (errors.isNotEmpty) await _sendErrors(errors);
+    if (jobs.isNotEmpty) await _sendJobs(jobs);
+    if (metrics.isNotEmpty) await _sendMetrics(metrics);
     
     if (requests.isNotEmpty) {
       for (final req in requests) {
@@ -107,9 +131,40 @@ class OmniPulse {
       };
       await _send('/api/ingest/app-logs', payload);
     } catch (e) {
-      if (config.debug) {
-        print('[OmniPulse] Failed to send logs: $e');
+      if (config.debug) print('[OmniPulse] Failed to send logs: $e');
+    }
+  }
+
+  Future<void> _sendErrors(List<ErrorEntry> errors) async {
+    try {
+      for (final error in errors) {
+        await _send('/api/ingest/app-errors', error.toJson());
       }
+    } catch (e) {
+      if (config.debug) print('[OmniPulse] Failed to send errors: $e');
+    }
+  }
+
+  Future<void> _sendJobs(List<JobEntry> jobs) async {
+    try {
+      for (final job in jobs) {
+        await _send('/api/ingest/app-job', job.toJson());
+      }
+    } catch (e) {
+      if (config.debug) print('[OmniPulse] Failed to send jobs: $e');
+    }
+  }
+
+  Future<void> _sendMetrics(List<AppMetricEntry> metrics) async {
+    try {
+      final payload = {
+        'service_name': config.serviceName,
+        'environment': config.environment,
+        'metrics': metrics.map((m) => m.toJson()).toList(),
+      };
+      await _send('/api/ingest/app-metrics', payload);
+    } catch (e) {
+      if (config.debug) print('[OmniPulse] Failed to send metrics: $e');
     }
   }
 
