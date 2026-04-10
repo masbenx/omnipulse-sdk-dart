@@ -23,6 +23,9 @@ class OmniPulse {
   final List<ErrorEntry> _errorBuffer = [];
   final List<JobEntry> _jobBuffer = [];
   final List<AppMetricEntry> _metricBuffer = [];
+  final List<AppOutgoingEntry> _outgoingBuffer = [];
+  final List<AppQueryEntry> _queryBuffer = [];
+  final List<AppCacheEntry> _cacheBuffer = [];
   
   Timer? _flushTimer;
   bool _isInitialized = false;
@@ -98,6 +101,21 @@ class OmniPulse {
     if (_metricBuffer.length >= config.batchSize) flush();
   }
 
+  void captureOutgoing(AppOutgoingEntry entry) {
+    _outgoingBuffer.add(entry);
+    if (_outgoingBuffer.length >= config.batchSize) flush();
+  }
+
+  void captureQuery(AppQueryEntry entry) {
+    _queryBuffer.add(entry);
+    if (_queryBuffer.length >= config.batchSize) flush();
+  }
+
+  void captureCache(AppCacheEntry entry) {
+    _cacheBuffer.add(entry);
+    if (_cacheBuffer.length >= config.batchSize) flush();
+  }
+
   /// Flush all buffered data immediately
   Future<void> flush() async {
     final logs = List<LogEntry>.from(_logBuffer);
@@ -105,17 +123,26 @@ class OmniPulse {
     final errors = List<ErrorEntry>.from(_errorBuffer);
     final jobs = List<JobEntry>.from(_jobBuffer);
     final metrics = List<AppMetricEntry>.from(_metricBuffer);
+    final outgoings = List<AppOutgoingEntry>.from(_outgoingBuffer);
+    final queries = List<AppQueryEntry>.from(_queryBuffer);
+    final caches = List<AppCacheEntry>.from(_cacheBuffer);
 
     _logBuffer.clear();
     _requestBuffer.clear();
     _errorBuffer.clear();
     _jobBuffer.clear();
     _metricBuffer.clear();
+    _outgoingBuffer.clear();
+    _queryBuffer.clear();
+    _cacheBuffer.clear();
 
     if (logs.isNotEmpty) await _sendLogs(logs);
     if (errors.isNotEmpty) await _sendErrors(errors);
     if (jobs.isNotEmpty) await _sendJobs(jobs);
     if (metrics.isNotEmpty) await _sendMetrics(metrics);
+    if (outgoings.isNotEmpty) await _sendOutgoings(outgoings);
+    if (queries.isNotEmpty) await _sendQueries(queries);
+    if (caches.isNotEmpty) await _sendCaches(caches);
     
     if (requests.isNotEmpty) {
       for (final req in requests) {
@@ -175,6 +202,36 @@ class OmniPulse {
       if (config.debug) {
         print('[OmniPulse] Failed to send request: $e');
       }
+    }
+  }
+
+  Future<void> _sendOutgoings(List<AppOutgoingEntry> entries) async {
+    try {
+      for (final entry in entries) {
+        await _send('/api/ingest/app-outgoing', entry.toJson());
+      }
+    } catch (e) {
+      if (config.debug) print('[OmniPulse] Failed to send outgoings: $e');
+    }
+  }
+
+  Future<void> _sendQueries(List<AppQueryEntry> entries) async {
+    try {
+      for (final entry in entries) {
+        await _send('/api/ingest/app-query', entry.toJson());
+      }
+    } catch (e) {
+      if (config.debug) print('[OmniPulse] Failed to send queries: $e');
+    }
+  }
+
+  Future<void> _sendCaches(List<AppCacheEntry> entries) async {
+    try {
+      for (final entry in entries) {
+        await _send('/api/ingest/app-cache', entry.toJson());
+      }
+    } catch (e) {
+      if (config.debug) print('[OmniPulse] Failed to send caches: $e');
     }
   }
 

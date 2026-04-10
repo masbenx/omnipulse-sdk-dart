@@ -181,3 +181,117 @@ class AppMetricEntry {
     if (env != null) 'env': env,
   };
 }
+
+class AppOutgoingEntry {
+  final DateTime timestamp;
+  final String method;
+  final String url;
+  final int status;
+  final int durationMs;
+  final String? error;
+  final String? env;
+  final String? traceId;
+  final String? requestId;
+
+  AppOutgoingEntry({
+    required this.timestamp,
+    required this.method,
+    required this.url,
+    required this.status,
+    required this.durationMs,
+    this.error,
+    this.env,
+    this.traceId,
+    this.requestId,
+  });
+
+  Map<String, dynamic> toJson() => {
+    'timestamp': timestamp.toIso8601String(),
+    'method': method,
+    'url': url,
+    'status': status,
+    'duration_ms': durationMs,
+    if (error != null) 'error': error,
+    if (env != null) 'env': env,
+    if (traceId != null) 'trace_id': traceId,
+    if (requestId != null) 'request_id': requestId,
+  };
+}
+
+class AppQueryEntry {
+  final DateTime timestamp;
+  final String dbSystem;
+  final String? fingerprint;
+  final String statement;
+  final int durationMs;
+  final int? rows;
+  final String? error;
+  final String? route;
+  final String? env;
+  final String? traceId;
+  final String? requestId;
+
+  AppQueryEntry({
+    required this.timestamp,
+    required this.dbSystem,
+    this.fingerprint,
+    required this.statement,
+    required this.durationMs,
+    this.rows,
+    this.error,
+    this.route,
+    this.env,
+    this.traceId,
+    this.requestId,
+  });
+
+  Map<String, dynamic> toJson() => {
+    'timestamp': timestamp.toIso8601String(),
+    'db_system': dbSystem,
+    if (fingerprint != null) 'fingerprint': fingerprint,
+    'statement': statement,
+    'duration_ms': durationMs,
+    if (rows != null) 'rows': rows,
+    if (error != null) 'error': error,
+    if (route != null) 'route': route,
+    if (env != null) 'env': env,
+    if (traceId != null) 'trace_id': traceId,
+    if (requestId != null) 'request_id': requestId,
+  };
+}
+
+class AppCacheEntry {
+  final DateTime timestamp;
+  final String operation; // 'get', 'set', 'del'
+  final String key;
+  final bool? hit;
+  final int durationMs;
+  final String store;
+  final String? env;
+  final String? traceId;
+  final String? requestId;
+
+  AppCacheEntry({
+    required this.timestamp,
+    required this.operation,
+    required this.key,
+    this.hit,
+    required this.durationMs,
+    required this.store,
+    this.env,
+    this.traceId,
+    this.requestId,
+  });
+
+  Map<String, dynamic> toJson() => {
+    'timestamp': timestamp.toIso8601String(),
+    'operation': operation,
+    'key': key,
+    if (hit != null) 'hit': hit,
+    'duration_ms': durationMs,
+    'store': store,
+    if (env != null) 'env': env,
+    if (traceId != null) 'trace_id': traceId,
+    if (requestId != null) 'request_id': requestId,
+  };
+}
